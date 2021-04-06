@@ -1,11 +1,32 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 def main():
-	dim=4
+	dim=50
 	map,targetPos=generateMap(dim)
 	printMap(map)
-	basicAgent1(map)
+	startingPos=(random.randrange(0,dim),random.randrange(0,dim))
+	#basicAgent1(map,startingPos)
+	d=basicAgent2(map,startingPos)
+	print(d)
+
+	#n=10
+	#sum1=0
+	#sum2=0
+	#dim=50
+	#for i in range(0,n):
+	#	startingPos=(random.randrange(0,dim),random.randrange(0,dim))
+	#	map,targetPos=generateMap(dim)
+	#	print("MAP: "+str(i))
+	#	printMap(map)
+	#	print("\n")
+	#	sum1=sum1+basicAgent1(map,startingPos)
+	#	print("1 done")
+	#	sum2=sum2+basicAgent2(map,startingPos)
+	#print("AVG TURNS 1: "+str(sum1/n))
+	#print("AVG TURNS 2: "+str(sum2/n))
+
 
 #Flat='F', Hilly='H', Forrest='T', Caves='C'
 class Space():
@@ -98,27 +119,28 @@ def getBestSpace1(map,belief,currentPos):
 	dist=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
 	return moveToPos,dist
 
-def basicAgent1(map):
+def basicAgent1(map, startingPos):
 	dim=len(map)
 
 	#Initial Beliefs at t=0
 	beliefMap=[[1/dim**2 for i in range(dim)] for j in range(dim)]
 
 	found=False
-	currentPos=(random.randrange(0,dim),random.randrange(0,dim))
+	currentPos=startingPos
 
 	turns=0
 	terrainProbs=[0.1, 0.3, 0.7, 0.9]
 
 
 	while not found:
-		print(np.array(beliefMap))
+		#print(np.array(beliefMap))
+		
 		#Find position with highest belief and its distance from current position
 		moveToPos,dist=getBestSpace1(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -145,8 +167,8 @@ def basicAgent1(map):
 			#If target not found update beliefs
 			beliefMap=updateBelief(map,beliefMap,currentPos)
 		
-	printMap(map)
-	print(turns)
+	#printMap(map)
+	#print(turns)
 	return turns
 
 def getBestSpace2(map,belief,currentPos):
@@ -161,7 +183,7 @@ def getBestSpace2(map,belief,currentPos):
 	else:
 			pTerrain=terrainProbs[3]
 	
-	max=belief[currentPos[0]][currentPos[1]]*pTerrain
+	max=belief[currentPos[0]][currentPos[1]]*(1-pTerrain)
 	moveToPos=currentPos
 	spaces=[currentPos]
 	dim=len(map)
@@ -179,12 +201,12 @@ def getBestSpace2(map,belief,currentPos):
 				pTerrain=terrainProbs[3]
 
 			#Target space has highest probability of finding. Reset list of spaces
-			if belief[row][col]*pTerrain>max:
+			if belief[row][col]*(1-pTerrain)>max:
 				moveToPos=(row,col)
-				max=belief[row][col]*pTerrain
+				max=belief[row][col]*(1-pTerrain)
 				spaces=[(row,col)]
 			#Same belief, pick closest by Manhattan distance. Store both if equally far
-			elif belief[row][col]*pTerrain==max:
+			elif belief[row][col]*(1-pTerrain)==max:
 				dist1=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
 				dist2=abs(currentPos[0]-row)+abs(currentPos[1]-col)
 				if dist2<dist1:
@@ -197,26 +219,28 @@ def getBestSpace2(map,belief,currentPos):
 	dist=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
 	return moveToPos,dist
 
-def basicAgent2(map):
+def basicAgent2(map,startingPos):
 	dim=len(map)
+	terrainProbs=[0.1, 0.3, 0.7, 0.9]
 
 	#Initial Beliefs at t=0
 	beliefMap=[[1/dim**2 for i in range(dim)] for j in range(dim)]
 
 	found=False
-	currentPos=(random.randrange(0,dim),random.randrange(0,dim))
+	currentPos=startingPos
 
 	turns=0
 
 	while not found:
-		print(np.array(beliefMap))
-		#Find position with highest belief and its distance from current position
+		#print(np.array(beliefMap))
+
+		#Find position with highest best chance of finding and its distance from current position
 		moveToPos,dist=getBestSpace2(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
+		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		currentPos=moveToPos
-		print("MOVE TO "+str(currentPos)+"\n")
 
 		#Perform a search at space, add 1 to turns
 		turns=turns+1
@@ -234,12 +258,15 @@ def basicAgent2(map):
 			#Find if no false negative
 			if(random.random()<=pTerrain):
 				found=True
+			else:
+				#If target not found update beliefs
+				beliefMap=updateBelief(map,beliefMap,currentPos)
 		else:
 			#If target not found update beliefs
 			beliefMap=updateBelief(map,beliefMap,currentPos)
 		
-	printMap(map)
-	print(turns)
+	#printMap(map)
+	#print(turns)
 	return turns
 
 
