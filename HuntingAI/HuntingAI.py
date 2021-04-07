@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-	dim=50
+	dim=4
 	map,targetPos=generateMap(dim)
 	printMap(map)
 	startingPos=(random.randrange(0,dim),random.randrange(0,dim))
 	#basicAgent1(map,startingPos)
-	d=basicAgent2(map,startingPos)
+	d=basicAgent1(map,startingPos)
 	print(d)
 
 	#n=10
@@ -61,12 +61,12 @@ def updateBelief(map, belief, observedPos):
 	dim=len(map)
 	terrainProbs=[0.1, 0.3, 0.7, 0.9]
 
-	#sum=0
+	sum=0
 
-	#for row in range(0,dim):
-	#	for col in range(0,dim):
-	#		sum=sum+belief[row][col]
-	#print(sum)
+	for row in range(0,dim):
+		for col in range(0,dim):
+			sum=sum+belief[row][col]
+	print("SUM: "+str(sum))
 
 	#print(str(observedPos[0])+" "+str(observedPos[1]))
 
@@ -80,16 +80,19 @@ def updateBelief(map, belief, observedPos):
 			pTerrain=terrainProbs[3]
 
 	observedBel=belief[observedPos[0]][observedPos[1]]
-	pFail=(((dim**2)-1)/(dim**2)+pTerrain*(1/dim**2))
+
+	#pFail=((1-observedBel)+(pTerrain*(observedBel)))
+	#pFail=((dim**2-1)/dim**2+(1/dim**2)*(pTerrain))
+	pFail=(1/dim**2)*(pTerrain)
 
 	for row in range(0,dim):
 		for col in range(0,dim):
 			#Update unobserved spaces
-				belief[row][col]=belief[row][col]/pFail
+			#belief[row][col]=belief[row][col]/pFail
+			belief[row][col]=belief[row][col]*(1-pFail)/(sum-observedBel)
 	
-	#Update observed spaces
-	belief[observedPos[0]][observedPos[1]]=observedBel*(1-pTerrain)
-
+	#Update observed space
+	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)
 
 	return belief
 
@@ -133,14 +136,14 @@ def basicAgent1(map, startingPos):
 
 
 	while not found:
-		#print(np.array(beliefMap))
+		print(np.array(beliefMap))
 		
 		#Find position with highest belief and its distance from current position
 		moveToPos,dist=getBestSpace1(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -166,6 +169,7 @@ def basicAgent1(map, startingPos):
 		else:
 			#If target not found update beliefs
 			beliefMap=updateBelief(map,beliefMap,currentPos)
+			
 		
 	#printMap(map)
 	#print(turns)
