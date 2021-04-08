@@ -3,29 +3,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-	dim=4
-	map,targetPos=generateMap(dim)
-	printMap(map)
-	startingPos=(random.randrange(0,dim),random.randrange(0,dim))
-	#basicAgent1(map,startingPos)
-	d=basicAgent1(map,startingPos)
-	print(d)
+	#dim=4
+	#map,targetPos=generateMap(dim)
+	#printMap(map)
+	#startingPos=(random.randrange(0,dim),random.randrange(0,dim))
+	##basicAgent1(map,startingPos)
+	#d=basicAgent1(map,startingPos)
+	#print(d)
 
-	#n=10
-	#sum1=0
-	#sum2=0
-	#dim=50
-	#for i in range(0,n):
-	#	startingPos=(random.randrange(0,dim),random.randrange(0,dim))
-	#	map,targetPos=generateMap(dim)
-	#	print("MAP: "+str(i))
-	#	printMap(map)
-	#	print("\n")
-	#	sum1=sum1+basicAgent1(map,startingPos)
-	#	print("1 done")
-	#	sum2=sum2+basicAgent2(map,startingPos)
-	#print("AVG TURNS 1: "+str(sum1/n))
-	#print("AVG TURNS 2: "+str(sum2/n))
+	n=10
+	sum1=0
+	sum2=0
+	dim=50
+	for i in range(0,n):
+		startingPos=(random.randrange(0,dim),random.randrange(0,dim))
+		map,targetPos=generateMap(dim)
+		print("MAP: "+str(i))
+		printMap(map)
+		print("\n")
+		sum1=sum1+basicAgent1(map,startingPos)
+		print("1 done")
+		sum2=sum2+basicAgent2(map,startingPos)
+	print("AVG TURNS 1: "+str(sum1/n))
+	print("AVG TURNS 2: "+str(sum2/n))
 
 
 #Flat='F', Hilly='H', Forrest='T', Caves='C'
@@ -63,11 +63,6 @@ def updateBelief(map, belief, observedPos):
 
 	sum=0
 
-	for row in range(0,dim):
-		for col in range(0,dim):
-			sum=sum+belief[row][col]
-	print("SUM: "+str(sum))
-
 	#print(str(observedPos[0])+" "+str(observedPos[1]))
 
 	if map[observedPos[0]][observedPos[1]].terrain=='F':
@@ -81,18 +76,21 @@ def updateBelief(map, belief, observedPos):
 
 	observedBel=belief[observedPos[0]][observedPos[1]]
 
-	#pFail=((1-observedBel)+(pTerrain*(observedBel)))
-	#pFail=((dim**2-1)/dim**2+(1/dim**2)*(pTerrain))
-	pFail=(1/dim**2)*(pTerrain)
+	for row in range(0,dim):
+		for col in range(0,dim):
+			sum=sum+belief[row][col]
+	denom=sum-observedBel+observedBel*pTerrain
+	print("SUM: "+str(sum))
+
+	#denom=((observedBel)+(pTerrain*(observedBel)))
 
 	for row in range(0,dim):
 		for col in range(0,dim):
 			#Update unobserved spaces
-			#belief[row][col]=belief[row][col]/pFail
-			belief[row][col]=belief[row][col]*(1-pFail)/(sum-observedBel)
+			belief[row][col]=belief[row][col]/denom
 	
 	#Update observed space
-	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)
+	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)/denom
 
 	return belief
 
