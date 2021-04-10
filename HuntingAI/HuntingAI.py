@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 from queue import PriorityQueue
 
 def main():
-	#dim=4
+	#dim=50
 	#map,targetPos=generateMap(dim)
 	#printMap(map)
 	#startingPos=(random.randrange(0,dim),random.randrange(0,dim))
-	#a=advancedAgent(map,startingPos)
+	#a=basicAgent1(map,startingPos)
 	#print(a)
 
 	################################################
@@ -16,7 +16,7 @@ def main():
 	sum1=0
 	sum2=0
 	sum3=0
-	dim=10
+	dim=20
 	for i in range(0,n):
 		startingPos=(random.randrange(0,dim),random.randrange(0,dim))
 		map,targetPos=generateMap(dim)
@@ -91,6 +91,8 @@ def updateBelief(map, belief, observedPos):
 				denom=denom+belief[row][col]*pTerrain
 			if(belief[row][col]<0):
 				raise Exception("NEGATIVE BELIEF")
+	
+	#denom=1-observedBel+observedBel*pTerrain
 
 	for row in range(0,dim):
 		for col in range(0,dim):
@@ -159,7 +161,7 @@ def basicAgent1(map, startingPos):
 		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		if(currentPos==moveToPos):
 			print("AGENT 1 STAYED IN SAME PLACE"+str(currentPos))
-			print(np.array(beliefMap))
+			#print(np.array(beliefMap))
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -177,7 +179,9 @@ def basicAgent1(map, startingPos):
 				pTerrain=terrainProbs[3]
 
 			#Find if no false negative
-			if(random.random()<=pTerrain):
+			rand=(random.random())
+			print(str(rand)+" "+str(pTerrain))
+			if(rand>=pTerrain):
 				found=True
 			else:
 				#If target not found update beliefs
@@ -279,7 +283,7 @@ def basicAgent2(map,startingPos):
 				pTerrain=terrainProbs[3]
 
 			#Find if no false negative
-			if(random.random()<=pTerrain):
+			if(random.random()>=pTerrain):
 				found=True
 			else:
 				#If target not found update beliefs
@@ -346,8 +350,8 @@ def getBestSpaceAdv(map,belief,currentPos):
 	#List of pos to visit en route in order of increasing distance
 	listOfPos=PriorityQueue()
 	listOfPos.put((dist,(moveToPos[0],moveToPos[1])))
-	searchabilityThreshold=0.8*max/(dist+1)
-	#searchabilityThreshold=0.1*max
+	#searchabilityThreshold=0.8*max/(dist+1)
+	searchabilityThreshold=0.6*max
 	if(dist>distThreshold):
 		listOfPos=PriorityQueue()
 		topSide=min([currentPos[0],moveToPos[0]])
@@ -367,12 +371,13 @@ def getBestSpaceAdv(map,belief,currentPos):
 					pTerrain=terrainProbs[3]
 
 				dist=abs(currentPos[0]-row)+abs(currentPos[1]-col)
-				searchability=belief[row][col]*(1-pTerrain)/(dist+1)
+				#searchability=belief[row][col]*(1-pTerrain)/(dist+1)
+				searchability=belief[row][col]*(1-pTerrain)
 				if(searchability>searchabilityThreshold):
 					listOfPos.put((dist,(row,col)))
 
 
-	return listOfPos
+	return listOfPos, moveToPos
 
 def advancedAgent(map,startingPos):
 	dim=len(map)
@@ -389,8 +394,9 @@ def advancedAgent(map,startingPos):
 	while not found:
 		#print(np.array(beliefMap))
 
+
 		#Find position with highest best chance of finding and its distance from current position
-		listOfPos=getBestSpaceAdv(map,beliefMap,currentPos)
+		listOfPos,goalPos=getBestSpaceAdv(map,beliefMap,currentPos)
 		dist=0
 
 		item=listOfPos.get()
@@ -424,7 +430,7 @@ def advancedAgent(map,startingPos):
 				else:
 					pTerrain=terrainProbs[3]
 
-				if(beliefMap[itemPos[0]][itemPos[1]]*(1-pTerrain)>max):
+				if(beliefMap[itemPos[0]][itemPos[1]]*(1-pTerrain)>max and abs(itemPos[0]-goalPos[0])+abs(itemPos[1]-goalPos[1])<abs(currentPos[0]-goalPos[0])+abs(currentPos[1]-goalPos[1])):
 					maxItem=item
 			else:
 				#If moving to a new distance search best at previous dist
@@ -450,7 +456,7 @@ def advancedAgent(map,startingPos):
 						pTerrain=terrainProbs[3]
 
 					#Find if no false negative
-					if(random.random()<=pTerrain):
+					if(random.random()>=pTerrain):
 						found=True
 					else:
 						#If target not found update beliefs
