@@ -82,11 +82,15 @@ def updateBelief(map, belief, observedPos):
 			pTerrain=terrainProbs[3]
 
 	observedBel=belief[observedPos[0]][observedPos[1]]
-
-
-	denom=1-observedBel+observedBel*pTerrain
-
-	#denom=((observedBel)+(pTerrain*(observedBel)))
+	denom=0
+	for row in range(0,dim):
+		for col in range(0,dim):
+			if(row!=observedPos[0] or col!=observedPos[1]):
+				denom=denom+belief[row][col]
+			else:
+				denom=denom+belief[row][col]*pTerrain
+			if(belief[row][col]<0):
+				raise Exception("NEGATIVE BELIEF")
 
 	for row in range(0,dim):
 		for col in range(0,dim):
@@ -96,6 +100,7 @@ def updateBelief(map, belief, observedPos):
 	#Update observed space
 	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)/denom
 
+	#sum=0
 	#for row in range(0,dim):
 	#	for col in range(0,dim):
 	#		sum=sum+belief[row][col]
@@ -144,14 +149,17 @@ def basicAgent1(map, startingPos):
 
 
 	while not found:
-		print(np.array(beliefMap))
+		#print(np.array(beliefMap))
 		
 		#Find position with highest belief and its distance from current position
 		moveToPos,dist=getBestSpace1(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		if(currentPos==moveToPos):
+			print("AGENT 1 STAYED IN SAME PLACE"+str(currentPos))
+			print(np.array(beliefMap))
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -244,14 +252,17 @@ def basicAgent2(map,startingPos):
 	turns=0
 
 	while not found:
-		print(np.array(beliefMap))
+		#print(np.array(beliefMap))
 
 		#Find position with highest best chance of finding and its distance from current position
 		moveToPos,dist=getBestSpace2(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		if(currentPos==moveToPos):
+			print("AGENT 2 STAYED IN SAME PLACE "+str(currentPos))
+			print(np.array(beliefMap))
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -277,8 +288,6 @@ def basicAgent2(map,startingPos):
 			#If target not found update beliefs
 			beliefMap=updateBelief(map,beliefMap,currentPos)
 		
-	#printMap(map)
-	#print(turns)
 	return turns
 
 def getBestSpaceAdv(map,belief,currentPos):
@@ -327,7 +336,7 @@ def getBestSpaceAdv(map,belief,currentPos):
 	#Pick random of equidistant points
 	moveToPos=spaces[random.randrange(0,len(spaces))]
 	dist=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
-	print("BEST SPACE: "+str(moveToPos))
+	#print("BEST SPACE: "+str(moveToPos))
 
 
 	#Look for points on the way to target, if best option is far enough
@@ -337,7 +346,7 @@ def getBestSpaceAdv(map,belief,currentPos):
 	#List of pos to visit en route in order of increasing distance
 	listOfPos=PriorityQueue()
 	listOfPos.put((dist,(moveToPos[0],moveToPos[1])))
-	searchabilityThreshold=0.6*max/(dist+1)
+	searchabilityThreshold=0.8*max/(dist+1)
 	#searchabilityThreshold=0.1*max
 	if(dist>distThreshold):
 		listOfPos=PriorityQueue()
@@ -378,7 +387,7 @@ def advancedAgent(map,startingPos):
 	turns=0
 
 	while not found:
-		print(np.array(beliefMap))
+		#print(np.array(beliefMap))
 
 		#Find position with highest best chance of finding and its distance from current position
 		listOfPos=getBestSpaceAdv(map,beliefMap,currentPos)
@@ -424,7 +433,7 @@ def advancedAgent(map,startingPos):
 
 				#Add number of moves required to get to desired space and move to desired space
 				turns=turns+dist
-				print("INTERMEDIATE MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+				#print("INTERMEDIATE MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 				currentPos=moveToPos
 
 				#Perform a search at space, add 1 to turns
@@ -470,7 +479,7 @@ def advancedAgent(map,startingPos):
 		moveToPos=maxItem[1]
 		dist=abs(moveToPos[0]-currentPos[0])+abs(moveToPos[1]-currentPos[1])
 		turns=turns+dist
-		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		currentPos=moveToPos
 
 		turns=turns+1
