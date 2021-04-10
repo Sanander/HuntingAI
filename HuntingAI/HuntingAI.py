@@ -1,31 +1,38 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+from queue import PriorityQueue
 
 def main():
 	#dim=4
 	#map,targetPos=generateMap(dim)
 	#printMap(map)
 	#startingPos=(random.randrange(0,dim),random.randrange(0,dim))
-	##basicAgent1(map,startingPos)
-	#d=basicAgent1(map,startingPos)
-	#print(d)
+	#a=advancedAgent(map,startingPos)
+	#print(a)
 
-	n=10
+	################################################
+	n=5
 	sum1=0
 	sum2=0
-	dim=50
+	sum3=0
+	dim=10
 	for i in range(0,n):
 		startingPos=(random.randrange(0,dim),random.randrange(0,dim))
 		map,targetPos=generateMap(dim)
 		print("MAP: "+str(i))
+		print("TARGET IN "+str(targetPos))
 		printMap(map)
 		print("\n")
 		sum1=sum1+basicAgent1(map,startingPos)
 		print("1 done")
 		sum2=sum2+basicAgent2(map,startingPos)
+		print("2 done")
+		sum3=sum3+advancedAgent(map,startingPos)
 	print("AVG TURNS 1: "+str(sum1/n))
 	print("AVG TURNS 2: "+str(sum2/n))
+	print("AVG TURNS 3: "+str(sum3/n))
+
 
 
 #Flat='F', Hilly='H', Forrest='T', Caves='C'
@@ -76,11 +83,8 @@ def updateBelief(map, belief, observedPos):
 
 	observedBel=belief[observedPos[0]][observedPos[1]]
 
-	for row in range(0,dim):
-		for col in range(0,dim):
-			sum=sum+belief[row][col]
-	denom=sum-observedBel+observedBel*pTerrain
-	print("SUM: "+str(sum))
+
+	denom=1-observedBel+observedBel*pTerrain
 
 	#denom=((observedBel)+(pTerrain*(observedBel)))
 
@@ -91,6 +95,12 @@ def updateBelief(map, belief, observedPos):
 	
 	#Update observed space
 	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)/denom
+
+	#for row in range(0,dim):
+	#	for col in range(0,dim):
+	#		sum=sum+belief[row][col]
+	#print("SUM: "+str(sum))
+
 
 	return belief
 
@@ -234,14 +244,14 @@ def basicAgent2(map,startingPos):
 	turns=0
 
 	while not found:
-		#print(np.array(beliefMap))
+		print(np.array(beliefMap))
 
 		#Find position with highest best chance of finding and its distance from current position
 		moveToPos,dist=getBestSpace2(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -269,6 +279,222 @@ def basicAgent2(map,startingPos):
 		
 	#printMap(map)
 	#print(turns)
+	return turns
+
+def getBestSpaceAdv(map,belief,currentPos):
+	terrainProbs=[0.1, 0.3, 0.7, 0.9]
+
+	if map[currentPos[0]][currentPos[1]].terrain=='F':
+			pTerrain=terrainProbs[0]
+	elif map[currentPos[0]][currentPos[1]].terrain=='H':
+			pTerrain=terrainProbs[1]
+	elif map[currentPos[0]][currentPos[1]].terrain=='T':
+			pTerrain=terrainProbs[2]
+	else:
+			pTerrain=terrainProbs[3]
+	
+	max=belief[currentPos[0]][currentPos[1]]*(1-pTerrain)
+	moveToPos=currentPos
+	spaces=[currentPos]
+	dim=len(map)
+
+	for row in range(0,dim):
+		for col in range(0,dim):
+
+			if map[row][col].terrain=='F':
+				pTerrain=terrainProbs[0]
+			elif map[row][col].terrain=='H':
+				pTerrain=terrainProbs[1]
+			elif map[row][col].terrain=='T':
+				pTerrain=terrainProbs[2]
+			else:
+				pTerrain=terrainProbs[3]
+
+			#Target space has highest probability of finding. Reset list of spaces
+			if belief[row][col]*(1-pTerrain)>max:
+				moveToPos=(row,col)
+				max=belief[row][col]*(1-pTerrain)
+				spaces=[(row,col)]
+			#Same belief, pick closest by Manhattan distance. Store both if equally far
+			elif belief[row][col]*(1-pTerrain)==max:
+				dist1=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
+				dist2=abs(currentPos[0]-row)+abs(currentPos[1]-col)
+				if dist2<dist1:
+					moveToPos=(row,col)
+					spaces=[(row,col)]
+				elif dist1==dist2:
+					spaces.append((row,col))
+	#Pick random of equidistant points
+	moveToPos=spaces[random.randrange(0,len(spaces))]
+	dist=abs(currentPos[0]-moveToPos[0])+abs(currentPos[1]-moveToPos[1])
+	print("BEST SPACE: "+str(moveToPos))
+
+
+	#Look for points on the way to target, if best option is far enough
+	#Search smaller map with corners at currentPos and moveToPos
+	distThreshold=2
+
+	#List of pos to visit en route in order of increasing distance
+	listOfPos=PriorityQueue()
+	listOfPos.put((dist,(moveToPos[0],moveToPos[1])))
+	searchabilityThreshold=0.6*max/(dist+1)
+	#searchabilityThreshold=0.1*max
+	if(dist>distThreshold):
+		listOfPos=PriorityQueue()
+		topSide=min([currentPos[0],moveToPos[0]])
+		leftSide=min([currentPos[1],moveToPos[1]])
+		height=abs(currentPos[0]-moveToPos[0])
+		width=abs(currentPos[1]-moveToPos[1])
+		for row in range(topSide, topSide+height+1):
+			for col in range(leftSide, leftSide+width+1):
+
+				if map[row][col].terrain=='F':
+					pTerrain=terrainProbs[0]
+				elif map[row][col].terrain=='H':
+					pTerrain=terrainProbs[1]
+				elif map[row][col].terrain=='T':
+					pTerrain=terrainProbs[2]
+				else:
+					pTerrain=terrainProbs[3]
+
+				dist=abs(currentPos[0]-row)+abs(currentPos[1]-col)
+				searchability=belief[row][col]*(1-pTerrain)/(dist+1)
+				if(searchability>searchabilityThreshold):
+					listOfPos.put((dist,(row,col)))
+
+
+	return listOfPos
+
+def advancedAgent(map,startingPos):
+	dim=len(map)
+	terrainProbs=[0.1, 0.3, 0.7, 0.9]
+
+	#Initial Beliefs at t=0
+	beliefMap=[[1/dim**2 for i in range(dim)] for j in range(dim)]
+
+	found=False
+	currentPos=startingPos
+
+	turns=0
+
+	while not found:
+		print(np.array(beliefMap))
+
+		#Find position with highest best chance of finding and its distance from current position
+		listOfPos=getBestSpaceAdv(map,beliefMap,currentPos)
+		dist=0
+
+		item=listOfPos.get()
+		distanceGroup=item[0]
+		itemPos=(item[1][0],item[1][1])
+		if map[itemPos[0]][itemPos[1]].terrain=='F':
+				pTerrain=terrainProbs[0]
+		elif map[itemPos[0]][itemPos[1]].terrain=='H':
+				pTerrain=terrainProbs[1]
+		elif map[itemPos[0]][itemPos[1]].terrain=='T':
+				pTerrain=terrainProbs[2]
+		else:
+			pTerrain=terrainProbs[3]
+
+		max=beliefMap[itemPos[0]][itemPos[1]]*(1-pTerrain)
+		maxItem=item
+
+		while not listOfPos.empty():
+			item=listOfPos.get()
+			listOfPos.put(item)
+			#Pick best of intermediate points
+			if(item[0]==distanceGroup):
+				item=listOfPos.get()
+				itemPos=(item[1][0],item[1][1])
+				if map[itemPos[0]][itemPos[1]].terrain=='F':
+						pTerrain=terrainProbs[0]
+				elif map[itemPos[0]][itemPos[1]].terrain=='H':
+						pTerrain=terrainProbs[1]
+				elif map[itemPos[0]][itemPos[1]].terrain=='T':
+						pTerrain=terrainProbs[2]
+				else:
+					pTerrain=terrainProbs[3]
+
+				if(beliefMap[itemPos[0]][itemPos[1]]*(1-pTerrain)>max):
+					maxItem=item
+			else:
+				#If moving to a new distance search best at previous dist
+				moveToPos=maxItem[1]
+				dist=abs(moveToPos[0]-currentPos[0])+abs(moveToPos[1]-currentPos[1])
+
+				#Add number of moves required to get to desired space and move to desired space
+				turns=turns+dist
+				print("INTERMEDIATE MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+				currentPos=moveToPos
+
+				#Perform a search at space, add 1 to turns
+				turns=turns+1
+				if map[currentPos[0]][currentPos[1]].target:
+					#Get terrain probability of searched space
+					if map[currentPos[0]][currentPos[1]].terrain=='F':
+							pTerrain=terrainProbs[0]
+					elif map[currentPos[0]][currentPos[1]].terrain=='H':
+							pTerrain=terrainProbs[1]
+					elif map[currentPos[0]][currentPos[1]].terrain=='T':
+							pTerrain=terrainProbs[2]
+					else:
+						pTerrain=terrainProbs[3]
+
+					#Find if no false negative
+					if(random.random()<=pTerrain):
+						found=True
+					else:
+						#If target not found update beliefs
+						beliefMap=updateBelief(map,beliefMap,currentPos)
+				else:
+					#If target not found update beliefs
+					beliefMap=updateBelief(map,beliefMap,currentPos)
+
+				#Get next item
+				item=listOfPos.get()
+				distanceGroup=item[0]
+				itemPos=(item[1][0],item[1][1])
+				if map[itemPos[0]][itemPos[1]].terrain=='F':
+						pTerrain=terrainProbs[0]
+				elif map[itemPos[0]][itemPos[1]].terrain=='H':
+						pTerrain=terrainProbs[1]
+				elif map[itemPos[0]][itemPos[1]].terrain=='T':
+						pTerrain=terrainProbs[2]
+				else:
+					pTerrain=terrainProbs[3]
+
+				max=beliefMap[itemPos[0]][itemPos[1]]*(1-pTerrain)
+				maxItem=item
+				
+		#Search last space in queue
+		moveToPos=maxItem[1]
+		dist=abs(moveToPos[0]-currentPos[0])+abs(moveToPos[1]-currentPos[1])
+		turns=turns+dist
+		print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
+		currentPos=moveToPos
+
+		turns=turns+1
+		if map[currentPos[0]][currentPos[1]].target:
+			if map[currentPos[0]][currentPos[1]].terrain=='F':
+					pTerrain=terrainProbs[0]
+			elif map[currentPos[0]][currentPos[1]].terrain=='H':
+					pTerrain=terrainProbs[1]
+			elif map[currentPos[0]][currentPos[1]].terrain=='T':
+					pTerrain=terrainProbs[2]
+			else:
+				pTerrain=terrainProbs[3]
+
+			#Find if no false negative
+			if(random.random()<=pTerrain):
+				found=True
+			else:
+				#If target not found update beliefs
+				beliefMap=updateBelief(map,beliefMap,currentPos)
+		else:
+			#If target not found update beliefs
+			beliefMap=updateBelief(map,beliefMap,currentPos)
+		
+
 	return turns
 
 
