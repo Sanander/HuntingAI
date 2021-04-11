@@ -4,19 +4,20 @@ import matplotlib.pyplot as plt
 from queue import PriorityQueue
 
 def main():
-	#dim=50
-	#map,targetPos=generateMap(dim)
-	#printMap(map)
-	#startingPos=(random.randrange(0,dim),random.randrange(0,dim))
-	#a=basicAgent1(map,startingPos)
-	#print(a)
+	###TESTING
+	# dim=50
+	# map,targetPos=generateMap(dim)
+	# printMap(map)
+	# startingPos=(random.randrange(0,dim),random.randrange(0,dim))
+	# a=advancedAgent(map,startingPos)
+	# print(a)
 
 	################################################
-	n=5
+	n=50
 	sum1=0
 	sum2=0
 	sum3=0
-	dim=20
+	dim=50
 	for i in range(0,n):
 		startingPos=(random.randrange(0,dim),random.randrange(0,dim))
 		map,targetPos=generateMap(dim)
@@ -29,9 +30,9 @@ def main():
 		sum2=sum2+basicAgent2(map,startingPos)
 		print("2 done")
 		sum3=sum3+advancedAgent(map,startingPos)
-	print("AVG TURNS 1: "+str(sum1/n))
-	print("AVG TURNS 2: "+str(sum2/n))
-	print("AVG TURNS 3: "+str(sum3/n))
+		print("AVG TURNS 1: "+str(sum1/(i+1)))
+		print("AVG TURNS 2: "+str(sum2/(i+1)))
+		print("AVG TURNS 3: "+str(sum3/(i+1)))
 
 
 
@@ -43,6 +44,7 @@ class Space():
 	def __str__(self):
 		return self.terrain
 
+#Generate Map
 def generateMap(dim):
 	map=[[Space("X") for i in range(dim)] for j in range(dim)]
 	for row in map:
@@ -61,16 +63,16 @@ def generateMap(dim):
 	map[targetPos[0]][targetPos[1]].target=True
 	return map,targetPos
 
+#Print Map
 def printMap(map):
 	print("\n".join([" ".join([str(item) for item in row]) for row in map]))
 
+#Update beleifs using probabilities in Q1 and Q2
 def updateBelief(map, belief, observedPos):
 	dim=len(map)
 	terrainProbs=[0.1, 0.3, 0.7, 0.9]
 
 	sum=0
-
-	#print(str(observedPos[0])+" "+str(observedPos[1]))
 
 	if map[observedPos[0]][observedPos[1]].terrain=='F':
 			pTerrain=terrainProbs[0]
@@ -83,31 +85,17 @@ def updateBelief(map, belief, observedPos):
 
 	observedBel=belief[observedPos[0]][observedPos[1]]
 	denom=0
+	
+	denom=1-observedBel+observedBel*pTerrain
+	#Update beleifs simultaneously
 	for row in range(0,dim):
 		for col in range(0,dim):
 			if(row!=observedPos[0] or col!=observedPos[1]):
-				denom=denom+belief[row][col]
+			  belief[row][col]=belief[row][col]/denom
 			else:
-				denom=denom+belief[row][col]*pTerrain
+				belief[row][col]=belief[row][col]*pTerrain/denom
 			if(belief[row][col]<0):
 				raise Exception("NEGATIVE BELIEF")
-	
-	#denom=1-observedBel+observedBel*pTerrain
-
-	for row in range(0,dim):
-		for col in range(0,dim):
-			#Update unobserved spaces
-			belief[row][col]=belief[row][col]/denom
-	
-	#Update observed space
-	belief[observedPos[0]][observedPos[1]]=observedBel*(pTerrain)/denom
-
-	#sum=0
-	#for row in range(0,dim):
-	#	for col in range(0,dim):
-	#		sum=sum+belief[row][col]
-	#print("SUM: "+str(sum))
-
 
 	return belief
 
@@ -151,17 +139,12 @@ def basicAgent1(map, startingPos):
 
 
 	while not found:
-		#print(np.array(beliefMap))
 		
 		#Find position with highest belief and its distance from current position
 		moveToPos,dist=getBestSpace1(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
-		if(currentPos==moveToPos):
-			print("AGENT 1 STAYED IN SAME PLACE"+str(currentPos))
-			#print(np.array(beliefMap))
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -180,7 +163,7 @@ def basicAgent1(map, startingPos):
 
 			#Find if no false negative
 			rand=(random.random())
-			print(str(rand)+" "+str(pTerrain))
+			#print(str(rand)+" "+str(pTerrain))
 			if(rand>=pTerrain):
 				found=True
 			else:
@@ -190,9 +173,6 @@ def basicAgent1(map, startingPos):
 			#If target not found update beliefs
 			beliefMap=updateBelief(map,beliefMap,currentPos)
 			
-		
-	#printMap(map)
-	#print(turns)
 	return turns
 
 def getBestSpace2(map,belief,currentPos):
@@ -256,17 +236,11 @@ def basicAgent2(map,startingPos):
 	turns=0
 
 	while not found:
-		#print(np.array(beliefMap))
-
 		#Find position with highest best chance of finding and its distance from current position
 		moveToPos,dist=getBestSpace2(map,beliefMap,currentPos)
 
 		#Add number of moves required to get to desired space and move to desired space
 		turns=turns+dist
-		#print("MOVE FROM "+str(currentPos)+"TO "+str(moveToPos)+" IN "+str(dist)+ " MOVES AND SEARCH\n")
-		if(currentPos==moveToPos):
-			print("AGENT 2 STAYED IN SAME PLACE "+str(currentPos))
-			print(np.array(beliefMap))
 		currentPos=moveToPos
 
 		#Perform a search at space, add 1 to turns
@@ -350,8 +324,8 @@ def getBestSpaceAdv(map,belief,currentPos):
 	#List of pos to visit en route in order of increasing distance
 	listOfPos=PriorityQueue()
 	listOfPos.put((dist,(moveToPos[0],moveToPos[1])))
-	#searchabilityThreshold=0.8*max/(dist+1)
-	searchabilityThreshold=0.6*max
+
+	searchabilityThreshold=0.8*max
 	if(dist>distThreshold):
 		listOfPos=PriorityQueue()
 		topSide=min([currentPos[0],moveToPos[0]])
@@ -371,7 +345,6 @@ def getBestSpaceAdv(map,belief,currentPos):
 					pTerrain=terrainProbs[3]
 
 				dist=abs(currentPos[0]-row)+abs(currentPos[1]-col)
-				#searchability=belief[row][col]*(1-pTerrain)/(dist+1)
 				searchability=belief[row][col]*(1-pTerrain)
 				if(searchability>searchabilityThreshold):
 					listOfPos.put((dist,(row,col)))
@@ -392,8 +365,6 @@ def advancedAgent(map,startingPos):
 	turns=0
 
 	while not found:
-		#print(np.array(beliefMap))
-
 
 		#Find position with highest best chance of finding and its distance from current position
 		listOfPos,goalPos=getBestSpaceAdv(map,beliefMap,currentPos)
